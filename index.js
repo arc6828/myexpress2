@@ -4,6 +4,10 @@ const line = require('@line/bot-sdk');
 
 const app = express();
 
+app.get('/', (req, res) => {
+  res.send('hello world, Chavalit');
+});
+
 // ตั้งค่าจาก LINE Developers Console
 const config = {
   channelAccessToken: 'YOUR_CHANNEL_ACCESS_TOKEN',
