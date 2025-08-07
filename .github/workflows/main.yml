@@ -17,7 +17,7 @@ jobs:
       uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.SSH_HOST }}
-        user: ${{ secrets.SSH_USER }}
+        username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           cd /var/www/chavalit.csbootstrap.com/myexpress2
