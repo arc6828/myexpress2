@@ -10,8 +10,8 @@ app.get('/', (req, res) => {
 
 // ตั้งค่าจาก LINE Developers Console
 const config = {
-  channelAccessToken: 'YOUR_CHANNEL_ACCESS_TOKEN',
-  channelSecret: 'YOUR_CHANNEL_SECRET'
+  channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN || "",
+  channelSecret: process.env.LINE_CHANNEL_SECRET || ""
 };
 
 app.use('/webhook', line.middleware(config));
