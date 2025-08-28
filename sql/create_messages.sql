@@ -1,6 +1,6 @@
 create table messages (
   id uuid default gen_random_uuid() primary key,
-  user_id uuid references users(id) on delete cascade,
+  user_id VARCHAR(255),                  -- LINE userId
   message_id text not null,              -- LINE messageId
   type text not null,                    -- text, image, sticker, video
   content text,                          -- ข้อความหรือ URL ของไฟล์
