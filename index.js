@@ -2,8 +2,10 @@
 require('dotenv').config();
 const express = require('express');
 const line = require('@line/bot-sdk');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 app.get('/', (req, res) => {
   res.send('hello world, Chavalit');
@@ -29,11 +31,24 @@ function handleEvent(event) {
   if (event.type !== 'message' || event.message.type !== 'text') {
     return Promise.resolve(null);
   }
+  // get message from user
+  const userMessage = event.message.text;
+  // save message to Supabase
 
-  return client.replyMessage(event.replyToken, {
-    type: 'text',
-    text: `คุณพิมพ์ว่า: ${event.message.text} ใช่ไหม?`
-  });
+  // return client.replyMessage(event.replyToken, {
+  //   type: 'text',
+  //   text: `คุณพิมพ์ว่า: ${event.message.text} ใช่ไหม?`
+  // });
+  
+  return supabase
+    .from('messages')
+    .insert([{ message: userMessage }])
+    .then(() => {
+      return client.replyMessage(event.replyToken, {
+        type: 'text',
+        text: `คุณพิมพ์ว่า: ${event.message.text} ใช่ไหม?`
+      });
+    });
 }
 
 const client = new line.Client(config);
