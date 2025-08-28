@@ -30,69 +30,22 @@ app.post("/webhook", (req, res) => {
 });
 
 // ตอบกลับข้อความ
-async function handleEvent(event) {
-  if (event.type === "message" && event.message.type === "image") {
-    const messageId = event.message.id;
-
-    try {
-      // ดึงไฟล์จาก LINE
-      const stream = await client.getMessageContent(messageId);
-
-      // แปลง stream → buffer
-      const chunks = [];
-      for await (const chunk of stream) {
-        chunks.push(chunk);
-      }
-      const buffer = Buffer.concat(chunks);
-
-      // อัพโหลดเข้า Supabase Storage
-      const fileName = `line_images/${messageId}.jpg`;
-      const { data, error } = await supabase.storage
-        .from("uploads") // ชื่อ bucket
-        .upload(fileName, buffer, {
-          contentType: "image/jpeg",
-          upsert: true, // ถ้ามีไฟล์ชื่อซ้ำ จะเขียนทับ
-        });
-
-      if (error) {
-        console.error("❌ Upload error:", error);
-        return client.replyMessage(event.replyToken, {
-          type: "text",
-          text: "อัปโหลดรูปไป Supabase ไม่สำเร็จ",
-        });
-      }
-
-      console.log("✅ Uploaded to Supabase:", data);
-
-      // ตอบกลับ User
-      return client.replyMessage(event.replyToken, {
-        type: "text",
-        text: "📷 ได้รับรูปแล้ว และอัปโหลดไป Supabase สำเร็จ!",
-      });
-    } catch (err) {
-      console.error("❌ Error:", err);
-    }
-  }
+async function handleEvent(event) {  
 
   if (event.type !== "message" || event.message.type !== "text") {
     return Promise.resolve(null);
   }
-  // get message from user
-  const userMessage = event.message.text;
-  // save message to Supabase
 
   // return client.replyMessage(event.replyToken, {
   //   type: 'text',
   //   text: `คุณพิมพ์ว่า: ${event.message.text} ใช่ไหม?`
   // });
+  
+  // ข้อความที่ผู้ใช้พิมพ์มา
+  const userMessage = event.message.text;
 
-  console.log({
-    user_id: event.source.userId,
-    message_id: event.message.id,
-    type: event.message.type,
-    content: event.message.text || event.message.fileUrl,
-    reply_token: event.replyToken,
-  });
+  // ข้อความที่ตอบกลับ
+  const replyContent = `คุณพิมพ์ว่า: ${userMessage} ใช่ไหม?`;
 
   return supabase
     .from("messages")
@@ -100,8 +53,9 @@ async function handleEvent(event) {
       user_id: event.source.userId,
       message_id: event.message.id,
       type: event.message.type,
-      content: event.message.text || event.message.fileUrl,
+      content: userMessage,
       reply_token: event.replyToken,
+      reply_content: replyContent,
     })
     .then(({ error }) => {
       if (error) {
@@ -113,7 +67,7 @@ async function handleEvent(event) {
       }
       return client.replyMessage(event.replyToken, {
         type: "text",
-        text: `คุณพิมพ์ว่า: ${event.message.text} ใช่ไหม?`,
+        text: replyContent,
       });
     });
 }

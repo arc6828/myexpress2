@@ -4,6 +4,7 @@ create table messages (
   message_id text not null,              -- LINE messageId
   type text not null,                    -- text, image, sticker, video
   content text,                          -- ข้อความหรือ URL ของไฟล์
-  reply_token text,                      -- token สำหรับ reply
+  reply_token text,                      -- token สำหรับ reply  
+  reply_content text,                    -- ข้อความที่ตอบกลับ สามารถ null
   created_at timestamp default now()
 );
