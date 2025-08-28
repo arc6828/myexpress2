@@ -1,34 +1,37 @@
 // index.js
-require('dotenv').config();
-const express = require('express');
-const line = require('@line/bot-sdk');
-const { createClient } = require('@supabase/supabase-js');
+require("dotenv").config();
+const express = require("express");
+const line = require("@line/bot-sdk");
+const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
+);
 
-app.get('/', (req, res) => {
-  res.send('hello world, Chavalit');
+app.get("/", (req, res) => {
+  res.send("hello world, Chavalit");
 });
 
 // ตั้งค่าจาก LINE Developers Console
 const config = {
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN || "",
-  channelSecret: process.env.LINE_CHANNEL_SECRET || ""
+  channelSecret: process.env.LINE_CHANNEL_SECRET || "",
 };
 
-app.use('/webhook', line.middleware(config));
+app.use("/webhook", line.middleware(config));
 
 // รับ webhook
-app.post('/webhook', (req, res) => {
-  Promise
-    .all(req.body.events.map(handleEvent))
-    .then(result => res.json(result));
+app.post("/webhook", (req, res) => {
+  Promise.all(req.body.events.map(handleEvent)).then((result) =>
+    res.json(result)
+  );
 });
 
 // ตอบกลับข้อความ
 function handleEvent(event) {
-  if (event.type !== 'message' || event.message.type !== 'text') {
+  if (event.type !== "message" || event.message.type !== "text") {
     return Promise.resolve(null);
   }
   // get message from user
@@ -39,14 +42,20 @@ function handleEvent(event) {
   //   type: 'text',
   //   text: `คุณพิมพ์ว่า: ${event.message.text} ใช่ไหม?`
   // });
-  
+
   return supabase
-    .from('messages')
-    .insert([{ message: userMessage }])
+    .from("messages")
+    .insert({
+      user_id: event.source.userId,
+      message_id: event.message.id,
+      type: event.message.type,
+      content: event.message.text || event.message.fileUrl,
+      reply_token: event.replyToken,
+    })
     .then(() => {
       return client.replyMessage(event.replyToken, {
-        type: 'text',
-        text: `คุณพิมพ์ว่า: ${event.message.text} ใช่ไหม?`
+        type: "text",
+        text: `คุณพิมพ์ว่า: ${event.message.text} ใช่ไหม?`,
       });
     });
 }
