@@ -3,12 +3,17 @@ require("dotenv").config();
 const express = require("express");
 const line = require("@line/bot-sdk");
 const { createClient } = require("@supabase/supabase-js");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
+
+// Init Gemini
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 app.get("/", (req, res) => {
   res.send("hello world, Chavalit");
@@ -28,10 +33,23 @@ app.post("/webhook", (req, res) => {
     res.json(result)
   );
 });
+// ฟังก์ชัน getGeminiReply
+async function getGeminiReply(message) {
+  try {
+    // ส่งข้อความไปที่ Gemini
+    const result = await model.generateContent(message);
+    // ดึงข้อความตอบกลับ
+    const reply = result.response.text();
+    return reply;
+  } catch (error) {
+    console.error(error);
+    // res.status(500).json({ error: "Something went wrong" });
+    return "Something went wrong";
+  }
+}
 
 // ตอบกลับข้อความ
-async function handleEvent(event) {  
-
+async function handleEvent(event) {
   if (event.type !== "message" || event.message.type !== "text") {
     return Promise.resolve(null);
   }
@@ -40,12 +58,15 @@ async function handleEvent(event) {
   //   type: 'text',
   //   text: `คุณพิมพ์ว่า: ${event.message.text} ใช่ไหม?`
   // });
-  
+
   // ข้อความที่ผู้ใช้พิมพ์มา
   const userMessage = event.message.text;
 
   // ข้อความที่ตอบกลับ
-  const replyContent = `คุณพิมพ์ว่า: ${userMessage} ใช่ไหม?`;
+  // const replyContent = `คุณพิมพ์ว่า: ${userMessage} ใช่ไหม?`;
+
+  // ข้อความที่ตอบกลับจาก GEMINI API
+  const replyContent = await getGeminiReply(userMessage);
 
   return supabase
     .from("messages")
