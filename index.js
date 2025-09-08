@@ -8,7 +8,8 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const app = express();
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
+  // process.env.SUPABASE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 // Init Gemini
@@ -48,8 +49,56 @@ async function getGeminiReply(message) {
   }
 }
 
+// function handle Image message and upload to Supabase Storage
+async function handleImageMessage(event) {
+  const messageId = event.message.id;
+
+  try {
+    // ดึงไฟล์จาก LINE
+    const stream = await client.getMessageContent(messageId);
+
+    // แปลง stream → buffer
+    const chunks = [];
+    for await (const chunk of stream) {
+      chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
+
+    // อัพโหลดเข้า Supabase Storage
+    const fileName = `line_images/${messageId}.jpg`;
+    const { data, error } = await supabase.storage
+      .from("uploads") // ชื่อ bucket
+      .upload(fileName, buffer, {
+        contentType: "image/jpeg",
+        upsert: true, // ถ้ามีไฟล์ชื่อซ้ำ จะเขียนทับ
+      });
+
+    if (error) {
+      console.error("❌ Upload error:", error);
+      return client.replyMessage(event.replyToken, {
+        type: "text",
+        text: "อัปโหลดรูปไป Supabase ไม่สำเร็จ",
+      });
+    }
+
+    console.log("✅ Uploaded to Supabase:", data);
+
+    // ตอบกลับ User
+    return client.replyMessage(event.replyToken, {
+      type: "text",
+      text: "📷 ได้รับรูปแล้ว และอัปโหลดไป Supabase สำเร็จ!",
+    });
+  } catch (err) {
+    console.error("❌ Error:", err);
+  }
+}
+
 // ตอบกลับข้อความ
 async function handleEvent(event) {
+  if (event.type === "message" && event.message.type === "image") {
+    return handleImageMessage(event);
+  }
+
   if (event.type !== "message" || event.message.type !== "text") {
     return Promise.resolve(null);
   }
