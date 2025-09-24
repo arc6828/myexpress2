@@ -1,0 +1,11 @@
+services:
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.app
+    ports:
+      - "8080:80"
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile.worker
